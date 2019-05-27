@@ -115,5 +115,6 @@ class TenantController extends Controller
     public function destroy($id)
     {
         //
+        Tenant::destroy($id);
     }
 }

@@ -162,7 +162,7 @@ class ApiController extends Controller
 	        $map->save();
 
 	        $status = $this->tryProcessImage($map->id);
-	        // $message = $status ? "Berhasil proses map" : "Gagal proses map";
+	        $message = $status ? "Berhasil proses map" : "Gagal proses map";
     	} catch(\Exception $ex) {
     		$message = $ex->getMessage();
     	}
@@ -174,44 +174,44 @@ class ApiController extends Controller
     }
 
 	public function tryProcessImage($id) {
-	    	$map = Map::find($id);
-	    	$file = Storage::get($map->original_path);
-	    	$img = imagecreatefromstring($file);
+    	$map = Map::find($id);
+    	$file = Storage::get($map->original_path);
+    	$img = imagecreatefromstring($file);
 
-		    $w = imagesx($img);
-		    $h = imagesy($img);
-		    
-		    $processedMap = array();
+	    $w = imagesx($img);
+	    $h = imagesy($img);
+	    
+	    $processedMap = array();
 
-		    $fp = fopen("text.txt", 'w');
+	    $fp = fopen("text.txt", 'w');
 
-		    $r = $g = $b = 0;
-		    $toMatchR = $toMatchG = $toMatchB = 0;
-		    for($y = 0; $y < $h; $y++) {
-		        for($x = 0; $x < $w; $x++) {
-		            $rgb = imagecolorat($img, $x, $y);
-					$r = ($rgb >> 16) & 0xFF;
-					$g = ($rgb >> 8) & 0xFF;
-					$b = $rgb & 0xFF;
+	    $r = $g = $b = 0;
+	    $toMatchR = $toMatchG = $toMatchB = 0;
+	    for($y = 0; $y < $h; $y++) {
+	        for($x = 0; $x < $w; $x++) {
+	            $rgb = imagecolorat($img, $x, $y);
+				$r = ($rgb >> 16) & 0xFF;
+				$g = ($rgb >> 8) & 0xFF;
+				$b = $rgb & 0xFF;
 
-					if ($this->isMatch($r, $g, $b, $toMatchR, $toMatchG, $toMatchB))
-					    fwrite($fp, 0);
-					else
-						fwrite($fp, 1);
-		        }
-		        fwrite($fp, "\n");
-		    }
-		    fclose($fp);
+				if ($this->isMatch($r, $g, $b, $toMatchR, $toMatchG, $toMatchB))
+				    fwrite($fp, 0);
+				else
+					fwrite($fp, 1);
+	        }
+	        fwrite($fp, "\n");
+	    }
+	    fclose($fp);
 
-			$path = explode(".", $map->original_path)[0];
-			$fileName = explode("/", $path)[1];
-			
-			Storage::put("public/image_array/$fileName.txt", file_get_contents("text.txt"));
-		    $map->processed_path = "$fileName.txt";
-		    $map->save();
+		$path = explode(".", $map->original_path)[0];
+		$fileName = explode("/", $path)[1];
+		
+		Storage::put("public/image_array/$fileName.txt", file_get_contents("text.txt"));
+	    $map->processed_path = "$fileName.txt";
+	    $map->save();
 
-		   //  $image = $this->createImageFromProcessedMap($map->id, $w, $h);
-		  	return 1;  
+	   //  $image = $this->createImageFromProcessedMap($map->id, $w, $h);
+	  	return 1;  
 	}
 
 	public function isMatch($r, $g, $b, $toMatchR, $toMatchG, $toMatchB) {
