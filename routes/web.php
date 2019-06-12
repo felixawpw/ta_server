@@ -53,11 +53,24 @@ Route::get('external/maps/by_map_id/{map_id}', 'ApiController@mapsByMapId');
 Route::post('external/marker/add', 'ApiController@storeMarker');
 Route::get('external/marker/by_map_id/{map_id}', 'ApiController@getMarkerByMapId');
 Route::get('external/marker/by_tenant_id/{tenant_id}', 'ApiController@getMarkerByTenantId');
-
+Route::get('external/marker/by_id/{marker_id}', 'ApiController@getMarkerById');
 
 
 Route::get('external/map/processed_map/download/{id}', 'ApiController@getProcessedImage');
+Route::get('external/map/processed_map/by_marker/download/{id}', 'ApiController@getCalibrateScanPointImage');
+Route::post('external/marker/calibrate_scan_point/', 'ApiController@saveScanPointCalibrationData');
+
 Route::get('test/process/image/{map_id}', 'ApiController@tryProcessImage');
 Route::get('external/map/map_array_data/{map_id}', 'ApiController@getArrayMapData');
 
 Route::get('external/marker/generate_qr_code/{id}', 'ApiController@generateMarkerQrCode');
+
+Route::post('external/report/add', 'ApiController@storeReport');
+Route::post('external/user/login', 'ApiController@externalUserLogin');
+
+Route::get('external/report/{id}', 'ApiController@getReportById');
+Route::get('external/process_report_marker/{id}', 'ApiController@processMarkerReport');
+
+Route::get('asd1', function () {
+	return \App\User::find(1)->reports;
+});

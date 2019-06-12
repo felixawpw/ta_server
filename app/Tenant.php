@@ -18,4 +18,8 @@ class Tenant extends Model
     public function markers() {
     	return $this->hasManyThrough('App\Marker', 'App\Map');
     }
+
+    public function reports() {
+        return $this->hasMany("App\Report");
+    }
 }

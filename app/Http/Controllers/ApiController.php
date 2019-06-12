@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Storage;
-use App\Map, App\Tenant, App\Marker;
+use App\Map, App\Tenant, App\Marker, App\Report, App\User;
 use App\Http\Resources\Tenant as TenantCollection;
 use App\Http\Resources\Map as MapCollection;
 use Auth;
@@ -13,6 +13,152 @@ use Illuminate\Support\Facades\DB;
 
 class ApiController extends Controller
 {
+	public function saveScanPointCalibrationData(Request $request) {
+		$marker = Marker::find($request->marker_id);
+		$marker->calibrate_x = $request->calibrate_x;
+		$marker->calibrate_y = $request->calibrate_y;
+		$marker->heading = $request->orientation;
+		$marker->save();
+
+		return response()->json([
+			"status" => true,
+			"message" => "Success calibrating scan point",
+		]);
+
+	}
+
+	public function getCalibrateScanPointImage($id) {
+		$marker = Marker::find($id);
+    	$map = $marker->map;
+    	$file = Storage::get($map->original_path);
+    	$img = imagecreatefromstring($file);
+
+	    $w = imagesx($img);
+	    $h = imagesy($img);
+
+		$image = $this->createScanPointProcessedMap($id, $w, $h);
+		header("Content-Type: image");
+		return imagepng($image);
+
+	}
+
+	public function createScanPointProcessedMap($id, $w, $h) {
+		$marker = Marker::find($id);
+		$map = $marker->map;
+
+	    $testImage = imagecreatetruecolor($w, $h);
+	    $log = Storage::get("public/image_array/$map->processed_path");
+		$rows = explode("\n",$log);
+
+		foreach($rows as $y => $row) {
+		    $columns = str_split($row);
+		    foreach($columns as $x => $column){
+	    	    switch($column){
+			        case '1':
+			            $color =  imagecolorallocate($testImage,255,255, 255);
+	            break;
+		        case '0':
+		            $color = imagecolorallocate($testImage,0,0,0);
+		            break;
+		        default:
+	            	$color = imagecolorallocate($testImage,125,125,125);
+		        }
+	        	imagesetpixel($testImage,$x,$y,$color);
+	    	}
+	    }
+
+
+    	$x = $marker->point_x;
+    	$y = $marker->point_y;
+
+		$markerPng = imagecreatefrompng('scanpoint.png');
+
+		imagecopyresized($testImage, $markerPng, $x - 12, $y - 12, 0, 0, 25, 25, 128, 128);
+
+    	$black = imagecolorallocate($testImage, 0,0,0);
+    	$font = "C:\Windows\Fonts\arial.ttf"; 
+		imagettftext($testImage, 12, 0, $x-30, $y+30, $black, $font, $marker->name);
+	    return $testImage;
+	}
+
+	public function getMarkerById($id) {
+		$marker = Marker::find($id);
+
+		return response()->json([
+			"status" => true,
+			"message" => "Success loading marker",
+			"markerData" => $marker
+		]);
+	}
+
+
+	public function processMarkerReport($id) {
+		$marker = Marker::find($id);
+		$map = $marker->map;
+
+		return response()->json([
+			"status" => true,
+			"message" => "Success loading map",
+			"mapData" => $map,
+			"markerId" => $id
+		]);
+	}
+
+	public function getReportById($id) {
+		$reports = User::find($id)->reports;
+
+		foreach ($reports as $r) {
+			$r->tenant_name = $r->tenant->nama;
+			$r->marker_name = $r->marker->name;
+		}
+
+		return response()->json([
+			"status" => true,
+			"message" => "Success loading reports",
+			"reportData" => $reports
+		]);
+	}
+
+	public function externalUserLogin(Request $request) {
+		$gId = $request->google_auth_id;
+		$nama = $request->google_display_name;
+		$roles = $request->roles;
+
+		$user = User::where("google_auth_id", "=", $gId)->first();
+		if ($user == null) {
+			$user = new User;
+			$user->google_auth_id = $gId;
+			$user->nama = $nama;
+			$user->roles = $roles;
+			$user->save();
+		}
+
+		return response()->json([
+			"status" => true,
+			"message" => "Log in success",
+			"userData" => $user
+		]);
+	}
+
+	public function storeReport(Request $request) {
+		$message = "Success submiting report";
+		try {
+			$report = new Report;
+			$report->report_detail = $request->report_detail;
+			$report->report_type = $request->report_type;
+			$report->tenant_id = $request->report_tenant_id;
+			$report->marker_id = $request->report_marker_id;
+			$report->save();
+    	} catch (\Exception $e) {
+    		$message = $e->getMessage();
+    	}
+
+    	return response()->json([
+    		"status" => true,
+    		"message" => $message
+    	]);
+	
+	}
 
 	public function mapByTenantId($tenantId) {
 		$maps = Map::where('tenant_id', '=', $tenantId)->get();
@@ -261,16 +407,20 @@ class ApiController extends Controller
 
 	    $markers = $map->markers;
 	    foreach ($markers as $m) {
+			if ($m->marker_type == 4 || $m->marker_type == 5)
+				continue;
+
 	    	$x = $m->point_x;
 	    	$y = $m->point_y;
-
-			if ($m->marker_type == 6)
+			
+			if ($m->marker_type == 2 || $m->marker_type == 3)
+				$markerPng = imagecreatefrompng("stair.png");
+			else if ($m->marker_type == 6)
 				$markerPng = imagecreatefrompng("restroom.png");
 			else if ($m->marker_type == 7)
 				$markerPng = imagecreatefrompng('scanpoint.png');
 			else
 				$markerPng = imagecreatefrompng('marker.png');
-
 
 			imagecopyresized($testImage, $markerPng, $x - 12, $y - 12, 0, 0, 25, 25, 128, 128);
 

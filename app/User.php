@@ -32,4 +32,7 @@ class User extends Authenticatable
         return $this->hasOne("App\Tenant");
     }
 
+    public function reports() {
+        return $this->hasManyThrough("App\Report", "App\Tenant");
+    }
 }

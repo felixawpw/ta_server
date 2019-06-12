@@ -68,7 +68,9 @@ class TenantController extends Controller
         return response()->json([
             "status" => true,
             "message" => $message,
-            "tenant_id" => $tenant->id
+            "tenant_id" => $tenant->id,
+            "tenant_name" => $tenant->name,
+            "google_maps_id" => $tenant->google_maps_address
         ]);
     }
 
