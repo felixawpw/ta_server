@@ -290,35 +290,6 @@ class ApiController extends Controller
     	]);
     }
 
-    public function storeMap(Request $request) {
-    	$message = "New map added!";
-    	try {
-	        $file = $request->file("denah");
-
-	        $map = new Map;
-	        
-	        $map->nama = $request->nama;
-	        $map->tenant_id = $request->tenant_id;
-	        $map->deskripsi = $request->deskripsi;
-	        $map->original_path = Storage::putFile("public", $file);
-	        $map->height = $request->height;
-	        $map->scale_width = $request->scale_width;
-	        $map->scale_length = $request->scale_length;
-
-	        $map->save();
-
-	        $status = $this->tryProcessImage($map->id);
-	        $message = $status ? "Berhasil proses map" : "Gagal proses map";
-    	} catch(\Exception $ex) {
-    		$message = $ex->getMessage();
-    	}
-
-        return response()->json([
-        	"status" => true,
-        	"message" => $message
-        ]);
-    }
-
 	public function tryProcessImage($id) {
     	$map = Map::find($id);
     	$file = Storage::get($map->original_path);
@@ -440,6 +411,16 @@ class ApiController extends Controller
 		return response($qr)->header('Content-type','image/png');
 	}
 
+	public function deleteMarker($id) {
+		$marker = Marker::find($id);
+		$marker->delete();
+
+		return response()->json([
+			"status" => true,
+			"message" => "Success deleting data"
+		]);
+	}
+
     public function storeMarker(Request $request) {
     	DB::beginTransaction();
     	$message = "New marker added!";
@@ -462,6 +443,55 @@ class ApiController extends Controller
 	    		$targetedMapId = $request->targeted_map_id;
 
 	    		$targetMarker = new Marker;
+	    		$targetMarker->name = "End of ".$marker->name;
+	    		$targetMarker->description = "End of ".$marker->description;
+	    		$targetMarker->point_x = $targetedPointX;
+	    		$targetMarker->point_y = $targetedPointY;
+	    		$targetMarker->marker_type = $markerType == 2 ? 4 : 5;
+	    		$targetMarker->map_id = $targetedMapId;
+	    		$targetMarker->save();
+				$marker->connecting_marker_id = $targetMarker->id;
+    			$marker->save();
+	    	} else if ($markerType == 7) {
+	    		//Store qr code, save to
+	    	}
+    		DB::commit();
+    	} catch (\Exception $e) {
+    		$success = false;
+    		DB::rollback();
+    		$message = $e->getMessage();
+    	}
+
+
+    	return response()->json([
+    		"status" => true,
+    		"message" => $message,
+    		"marker_id" => $success ? $marker->id : "-1"
+    	]);
+    }
+
+    public function editMarker(Request $request) {
+    	DB::beginTransaction();
+    	$message = "Success updating marker data!";
+    	$success = true;
+    	try {
+	    	$marker = Marker::find($request->id);
+	    	$marker->name = $request->name;
+	    	$marker->description = $request->description;
+	    	$marker->point_x = $request->point_x;
+	    	$marker->point_y = $request->point_y;
+	    	$marker->marker_type = $request->marker_type;
+	    	$marker->map_id = $request->map_id;
+    		$marker->save();
+
+	    	$markerType = $request->marker_type;
+
+	    	if ($markerType == 2 || $markerType == 3) {
+	    		$targetedPointX = $request->targeted_point_x;
+	    		$targetedPointY = $request->targeted_point_y;
+	    		$targetedMapId = $request->targeted_map_id;
+
+	    		$targetMarker = Marker::find($request->targeted_map_id);
 	    		$targetMarker->name = "End of ".$marker->name;
 	    		$targetMarker->description = "End of ".$marker->description;
 	    		$targetMarker->point_x = $targetedPointX;

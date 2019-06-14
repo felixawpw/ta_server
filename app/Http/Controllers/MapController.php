@@ -38,25 +38,32 @@ class MapController extends Controller
      */
     public function store(Request $request)
     {
-        //
-        $nama = $request->nama;
-        $deskripsi = $request->deskripsi_denah;
-        $file = $request->file("denah");
-        
-        $map = new Map;
-        
-        $map->nama = $nama;
-        $map->tenant_id = 1;
-        $map->deskripsi = $deskripsi;
-        $map->original_path = Storage::putFile("public", $file);
-        $map->height = $request->height;
-        $map->scale_width = $request->scale_width;
-        $map->scale_length = $request->scale_length;
+        $message = "New map added!";
+        try {
+            $file = $request->file("denah");
 
-        $map->save();
-        $status = "1||Success||Berhasil menambahkan denah baru : $map->nama";
+            $map = new Map;
+            
+            $map->nama = $request->nama;
+            $map->tenant_id = $request->tenant_id;
+            $map->deskripsi = $request->deskripsi;
+            $map->original_path = Storage::putFile("public", $file);
+            $map->height = $request->height;
+            $map->scale_width = $request->scale_width;
+            $map->scale_length = $request->scale_length;
 
-        return redirect()->action("MapController@index")->with("status", $status);
+            $map->save();
+
+            $status = $this->tryProcessImage($map->id);
+            $message = $status ? $message : "Unexpected error occured.";
+        } catch(\Exception $ex) {
+            $message = $ex->getMessage();
+        }
+
+        return response()->json([
+            "status" => true,
+            "message" => $message
+        ]);
     }
 
     /**
@@ -93,6 +100,35 @@ class MapController extends Controller
     public function update(Request $request, $id)
     {
         //
+        $message = "Map updated!";
+        try {
+            $map = Map::find($id);
+            $message = "Map updated!";
+            
+            $map->nama = $request->nama;
+            $map->tenant_id = $request->tenant_id;
+            $map->deskripsi = $request->deskripsi;
+            $map->height = $request->height;
+            $map->scale_width = $request->scale_width;
+            $map->scale_length = $request->scale_length;
+            $map->save();
+            $file = $request->file("denah");
+
+            if ($request->hasFile("denah")) {
+                $file = $request->file("denah");
+                $map->original_path = Storage::putFile("public", $file);
+                $map->save();
+                $status = $this->tryProcessImage($map->id);
+            }
+        } catch(\Exception $ex) {
+            $message = $ex->getMessage();
+        }
+
+        return response()->json([
+            "status" => true,
+            "message" => $message
+        ]);
+
     }
 
     /**
@@ -104,5 +140,61 @@ class MapController extends Controller
     public function destroy($id)
     {
         //
+        Map::destroy($id);
+        return response()->json([
+            "status" => true,
+            "message" => "Data deleted"
+        ]);
+
     }
+
+    public function tryProcessImage($id) {
+        $map = Map::find($id);
+        $file = Storage::get($map->original_path);
+        $img = imagecreatefromstring($file);
+
+        $w = imagesx($img);
+        $h = imagesy($img);
+        
+        $processedMap = array();
+
+        $fp = fopen("text.txt", 'w');
+
+        $r = $g = $b = 0;
+        $toMatchR = $toMatchG = $toMatchB = 0;
+        for($y = 0; $y < $h; $y++) {
+            for($x = 0; $x < $w; $x++) {
+                $rgb = imagecolorat($img, $x, $y);
+                $r = ($rgb >> 16) & 0xFF;
+                $g = ($rgb >> 8) & 0xFF;
+                $b = $rgb & 0xFF;
+
+                if ($this->isMatch($r, $g, $b, $toMatchR, $toMatchG, $toMatchB))
+                    fwrite($fp, 0);
+                else
+                    fwrite($fp, 1);
+            }
+            fwrite($fp, "\n");
+        }
+        fclose($fp);
+
+        $path = explode(".", $map->original_path)[0];
+        $fileName = explode("/", $path)[1];
+        
+        Storage::put("public/image_array/$fileName.txt", file_get_contents("text.txt"));
+        $map->processed_path = "$fileName.txt";
+        $map->save();
+
+       //  $image = $this->createImageFromProcessedMap($map->id, $w, $h);
+        return 1;  
+    }
+
+    public function isMatch($r, $g, $b, $toMatchR, $toMatchG, $toMatchB) {
+        $delta = 100;
+
+        return abs($r - $toMatchR) <= 150
+            && abs($g - $toMatchG <= 150)
+            && abs($b - $toMatchB <= 150);
+    }
+
 }

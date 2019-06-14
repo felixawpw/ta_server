@@ -32,7 +32,7 @@ Route::post('external/process/map/{mapId}', 'ApiController@processMap');
 Route::get('external/tenant/map/{gmap_id}', 'ApiController@mapJsonByTenant');
 Route::get('external/tenant/all', 'ApiController@tenantJsonAll');
 Route::get('external/tenant/by_id/{tenantId}', 'ApiController@tenantJsonById');
-
+Route::get('external/tenant/delete/{tenant_id}', 'TenantController@destroy');
 
 Route::get('external/map/unprocessed/all', 'ApiController@allUnprocessedMap');
 
@@ -42,15 +42,23 @@ Route::post('external/login', 'ApiController@authenticate');
 Route::get('external/tenant/by_places_id/{places_id}', 'ApiController@tenantByPlacesId');
 
 Route::post('external/place/add', 'TenantController@store');
+Route::post('external/place/edit/{id}', 'TenantController@update');
 Route::post('external/place/search', 'TenantController@getByAddress');
 
 Route::get('external/tenant/by_user_id/{user_id}', 'ApiController@tenantByUserId');
 Route::get('external/map/by_tenant_id/{tenant_id}', 'ApiController@mapByTenantId');
 
-Route::post('external/map/store', 'ApiController@storeMap');
+Route::post('external/map/store', 'MapController@store');
+Route::post('external/map/update/{id}', 'MapController@update');
+Route::delete('external/map/delete/{id}', 'MapController@destroy');
 
 Route::get('external/maps/by_map_id/{map_id}', 'ApiController@mapsByMapId');
 Route::post('external/marker/add', 'ApiController@storeMarker');
+Route::post('external/marker/edit', 'ApiController@editMarker');
+Route::get('external/marker/delete/{id}', 'ApiController@deleteMarker');
+
+
+
 Route::get('external/marker/by_map_id/{map_id}', 'ApiController@getMarkerByMapId');
 Route::get('external/marker/by_tenant_id/{tenant_id}', 'ApiController@getMarkerByTenantId');
 Route::get('external/marker/by_id/{marker_id}', 'ApiController@getMarkerById');

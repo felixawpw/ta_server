@@ -106,6 +106,25 @@ class TenantController extends Controller
     public function update(Request $request, $id)
     {
         //
+        $tenant = Tenant::find($id);
+        $tenant->nama = $request->nama;
+        $tenant->user_id = $request->user_id;
+        $tenant->google_maps_id = $request->google_maps_id;
+        $tenant->google_maps_address = $request->google_maps_address;
+        $message = "Success updating data";
+        try {
+            $tenant->save();
+        } catch (\Exception $ex) {
+            $message = $ex.getMessage();
+        }
+
+        return response()->json([
+            "status" => true,
+            "message" => $message,
+            "tenant_id" => $tenant->id,
+            "tenant_name" => $tenant->name,
+            "google_maps_id" => $tenant->google_maps_address
+        ]);
     }
 
     /**
@@ -116,7 +135,11 @@ class TenantController extends Controller
      */
     public function destroy($id)
     {
-        //
         Tenant::destroy($id);
+        return response()->json([
+            "status" => true,
+            "message" => "Success deleting data"
+        ]);
+
     }
 }
