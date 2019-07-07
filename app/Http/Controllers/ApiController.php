@@ -13,8 +13,36 @@ use Illuminate\Support\Facades\DB;
 
 class ApiController extends Controller
 {
+
+	public function verifyTenant(Request $request) {
+		$tenantId = $request->tenant_id;
+		$verification_code = $request->verification_code;
+
+		$tenant = Tenant::find($tenantId);
+		if ($tenant->verification_code == $verification_code) {
+			$tenant->verified = \Carbon\Carbon::now()->toDateString();
+			$tenant->save();
+			return response()->json([
+				"status" => true,
+				"message" => "Successfully verified."
+			]);
+		}
+		else {
+			return response()->json([
+				"status" => true,
+				"message" => "Verification failed"
+			]);
+		}
+	}
+
 	public function saveScanPointCalibrationData(Request $request) {
 		$marker = Marker::find($request->marker_id);
+		if ($request->user_id != $marker->map->tenant->user->google_auth_id)
+			return response()->json([
+				"status" => true,
+				"message" => "Calibration failed. This marker is not yours.",
+			]);
+
 		$marker->calibrate_x = $request->calibrate_x;
 		$marker->calibrate_y = $request->calibrate_y;
 		$marker->heading = $request->orientation;

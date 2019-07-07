@@ -18,6 +18,8 @@ class CreateTenantsTable extends Migration
             $table->string("nama");
             $table->string("google_maps_id");
             $table->string("google_maps_address");
+            $table->string("verification_code");
+            $table->date("verified")->nullable();
             $table->timestamps();
         });
     }

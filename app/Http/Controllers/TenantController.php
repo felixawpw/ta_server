@@ -21,7 +21,7 @@ class TenantController extends Controller
         $data = $request->nama;
         return response()->json([
             "message" => true,
-            "data" => Tenant::where("nama", 'like', "%$data%")->get()
+            "data" => Tenant::where("nama", 'like', "%$data%")->get(),
         ]);
     }
 
@@ -53,11 +53,18 @@ class TenantController extends Controller
      */
     public function store(Request $request)
     {
+        $randStr = "3patmZ";
+        while (Tenant::where("verification_code", "=", $randStr)->count() != 0) {
+            $randStr = str_random(6);
+        }
+
         $tenant = new Tenant;
         $tenant->nama = $request->nama;
         $tenant->user_id = $request->user_id;
         $tenant->google_maps_id = $request->google_maps_id;
         $tenant->google_maps_address = $request->google_maps_address;
+        $tenant->verification_code = $randStr;
+
         $message = "Success add new place";
         try {
             $tenant->save();
@@ -69,7 +76,7 @@ class TenantController extends Controller
             "status" => true,
             "message" => $message,
             "tenant_id" => $tenant->id,
-            "tenant_name" => $tenant->name,
+            "tenant_name" => $tenant->nama,
             "google_maps_id" => $tenant->google_maps_address
         ]);
     }

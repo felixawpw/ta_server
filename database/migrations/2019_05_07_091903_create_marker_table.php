@@ -22,10 +22,14 @@ class CreateMarkerTable extends Migration
             $table->integer('marker_type');
 
             $table->integer('map_id')->unsigned();
-            $table->foreign('map_id')->references('id')->on('maps');
+            $table->foreign('map_id')->references('id')->on('maps')->onDelete('cascade');
 
             $table->integer('connecting_marker_id')->unsigned()->nullable();
-            $table->foreign('connecting_marker_id')->references('id')->on('markers');
+            $table->foreign('connecting_marker_id')->references('id')->on('markers')->onDelete('cascade');
+            
+            $table->float("heading", 6, 3)->nullable();
+            $table->integer("calibrate_x")->nullable();
+            $table->integer("calibrate_y")->nullable();
 
             $table->timestamps();
         });

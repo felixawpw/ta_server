@@ -19,10 +19,10 @@ class CreateReportsTable extends Migration
             $table->string("report_type");
 
             $table->integer('tenant_id')->unsigned();
-            $table->foreign('tenant_id')->references('id')->on('tenants');
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
 
             $table->integer('marker_id')->unsigned()->nullable();
-            $table->foreign('marker_id')->references('id')->on('markers');
+            $table->foreign('marker_id')->references('id')->on('markers')->onDelete('cascade');
 
             $table->timestamps();
         });

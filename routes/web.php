@@ -79,6 +79,8 @@ Route::post('external/user/login', 'ApiController@externalUserLogin');
 Route::get('external/report/{id}', 'ApiController@getReportById');
 Route::get('external/process_report_marker/{id}', 'ApiController@processMarkerReport');
 
+Route::post('external/tenant/verify', 'ApiController@verifyTenant');
+
 Route::get('asd1', function () {
 	return \App\User::find(1)->reports;
 });

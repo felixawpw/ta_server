@@ -16,7 +16,7 @@ class ForeignMapTenant extends Migration
         //
         Schema::table('maps', function (Blueprint $table) {
             $table->integer('tenant_id')->unsigned();
-            $table->foreign('tenant_id')->references('id')->on('tenants');
+            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
         });
     }
 
